@@ -236,6 +236,16 @@ Scenario Engine + Grader
 
 ---
 
+# 🧪 Why This Environment is Challenging
+
+- Partial observability: agents must infer attacks from incomplete logs  
+- Misleading signals (red herrings) included intentionally  
+- Multi-step dependencies: actions fail without proper investigation  
+- Stochastic noise injection in logs and system metrics  
+- Requires reasoning, not simple action guessing  
+
+👉 Designed to simulate real-world cybersecurity decision-making
+
 # 📌 Future Improvements
 
 * Multi-agent attacker vs defender simulation

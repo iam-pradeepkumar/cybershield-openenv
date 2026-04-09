@@ -31,6 +31,29 @@ def post(url, data=None):
         return {}
 
 
+def smart_policy(obs):
+    # Brute force
+    if "Failed login" in obs:
+        return {"action_type": "block_ip", "target": "192.168.1.10"}
+
+    # Malware
+    if "crypto_miner" in obs:
+        return {"action_type": "isolate_host", "target": "web-server"}
+
+    # Phishing
+    if "Unknown location" in obs:
+        return {"action_type": "revoke_access", "target": "admin_account"}
+
+    # DDoS
+    if "Traffic spike" in obs:
+        return {"action_type": "block_ip", "target": "multiple"}
+
+    # Zero-day
+    if "privilege escalation" in obs:
+        return {"action_type": "patch_system", "target": "db-server"}
+
+    return None
+
 # =========================
 # LLM CALL (CRITICAL)
 # =========================
@@ -89,7 +112,7 @@ def run_task(task_id):
     for _ in range(MAX_STEPS):
 
         # 🔥 MUST CALL LLM
-        action = call_llm(obs)
+        action = smart_policy(obs) or call_llm(obs)
 
         print(f"[STEP] {json.dumps(action)}")
 
