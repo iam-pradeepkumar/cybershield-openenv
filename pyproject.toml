@@ -1,7 +1,7 @@
 [project]
 name = "cybershield-env"
 version = "0.1.0"
-description = "CyberShield RL Environment for cybersecurity simulation"
+description = "CyberShield RL Environment"
 requires-python = ">=3.10"
 
 dependencies = [
@@ -10,6 +10,10 @@ dependencies = [
     "pydantic>=2.0.0",
     "openenv-core[core]>=0.2.1"
 ]
+
+# 🔥 IMPORTANT (fixes script error)
+[project.scripts]
+server = "server.app:main"
 
 [build-system]
 requires = ["setuptools"]
