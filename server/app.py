@@ -8,6 +8,8 @@ from server.graders import grade, GRADER_MAP
 from server.scenarios import ALL_TASKS
 
 
+import uvicorn
+
 # =========================
 # ENV INSTANCE
 # =========================
@@ -306,3 +308,15 @@ def run_baseline():
         })
 
     return {"baseline_scores": results}
+
+
+def main():
+    uvicorn.run(
+        "server.app:app",
+        host="0.0.0.0",
+        port=7860,
+        reload=False
+    )
+
+if __name__ == "__main__":
+    main()
