@@ -2,17 +2,20 @@ import os
 import json
 import urllib.request
 
-# ✅ SAFE BASE URL (CRITICAL FIX)
-ENV_BASE_URL = os.environ.get(
-    "ENV_BASE_URL",
-    "http://localhost:7860"
-)
+# =========================
+# ENV (MANDATORY)
+# =========================
+ENV_BASE_URL = os.environ.get("ENV_BASE_URL", "http://localhost:7860")
+
+API_BASE_URL = os.environ.get("API_BASE_URL")  # provided by evaluator
+API_KEY = os.environ.get("API_KEY")            # provided by evaluator
+MODEL_NAME = os.environ.get("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
 
 MAX_STEPS = 3
 
 
 # =========================
-# SAFE HTTP POST
+# HTTP
 # =========================
 def post(url, data=None):
     try:
@@ -24,33 +27,49 @@ def post(url, data=None):
         )
         with urllib.request.urlopen(req, timeout=10) as res:
             return json.loads(res.read())
-    except Exception as e:
-        print(f"[ERROR] {e}")
+    except:
         return {}
 
 
 # =========================
-# SIMPLE SMART POLICY
+# LLM CALL (CRITICAL)
 # =========================
-def smart_policy(observation):
-    text = observation.lower()
+def call_llm(observation):
+    if not API_BASE_URL or not API_KEY:
+        return {"action_type": "scan_logs", "target": "auth-server"}
 
-    if "failed login" in text:
-        return {"action_type": "block_ip", "target": "192.168.1.10"}
+    try:
+        req = urllib.request.Request(
+            f"{API_BASE_URL}/chat/completions",
+            data=json.dumps({
+                "model": MODEL_NAME,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a cybersecurity expert. Return ONLY JSON action."
+                    },
+                    {
+                        "role": "user",
+                        "content": observation
+                    }
+                ],
+                "temperature": 0
+            }).encode(),
+            headers={
+                "Authorization": f"Bearer {API_KEY}",
+                "Content-Type": "application/json"
+            },
+            method="POST"
+        )
 
-    if "malware" in text or "cpu" in text:
-        return {"action_type": "isolate_host", "target": "web-server"}
+        with urllib.request.urlopen(req, timeout=10) as res:
+            out = json.loads(res.read())
+            content = out["choices"][0]["message"]["content"]
 
-    if "phishing" in text or "credential" in text:
-        return {"action_type": "revoke_access", "target": "admin_account"}
+            return json.loads(content)
 
-    if "traffic" in text or "ddos" in text:
-        return {"action_type": "block_ip", "target": "multiple"}
-
-    if "exploit" in text or "privilege" in text:
-        return {"action_type": "patch_system", "target": "db-server"}
-
-    return {"action_type": "scan_logs", "target": "auth-server"}
+    except:
+        return {"action_type": "scan_logs", "target": "auth-server"}
 
 
 # =========================
@@ -59,7 +78,6 @@ def smart_policy(observation):
 def run_task(task_id):
     print(f"[START] {task_id}")
 
-    # RESET
     resp = post(f"{ENV_BASE_URL}/reset", {"task_id": task_id})
 
     if not resp or "observation" not in resp:
@@ -68,10 +86,10 @@ def run_task(task_id):
 
     obs = resp["observation"].get("output", "")
 
-    # STEPS
     for _ in range(MAX_STEPS):
 
-        action = smart_policy(obs)
+        # 🔥 MUST CALL LLM
+        action = call_llm(obs)
 
         print(f"[STEP] {json.dumps(action)}")
 
@@ -85,12 +103,9 @@ def run_task(task_id):
         if result.get("done", False):
             break
 
-    # GRADER
     grade = post(f"{ENV_BASE_URL}/grader")
 
-    score = 0.0
-    if isinstance(grade, dict):
-        score = grade.get("score", 0.0)
+    score = grade.get("score", 0.0) if isinstance(grade, dict) else 0.0
 
     print(f"[END] score={score}")
 
@@ -110,6 +125,5 @@ if __name__ == "__main__":
     for t in tasks:
         try:
             run_task(t)
-        except Exception as e:
-            print(f"[ERROR] task failed: {e}")
+        except:
             print("[END] score=0.0")
