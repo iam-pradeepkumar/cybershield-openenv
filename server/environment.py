@@ -1,6 +1,7 @@
 from __future__ import annotations
 import copy
 import uuid
+import random
 from typing import Any
 
 from openenv.core.env_server import Environment
@@ -28,6 +29,15 @@ class CyberEnvironment(Environment):
         self._scenario = scenario
         self._systems = copy.deepcopy(scenario["systems"])
         self._logs = copy.deepcopy(scenario["logs"])
+        # 🔥 Add noise logs (real-world confusion)
+        for system in self._logs:
+            if random.random() < 0.3:
+                self._logs[system].append("DEBUG: routine system check completed")
+
+        # 🔥 Slight randomness in system metrics
+        for sys in self._systems.values():
+            sys["cpu"] += random.randint(-5, 5)
+            sys["memory"] += random.randint(-5, 5)
 
         self._state = CyberState(
             episode_id=str(uuid.uuid4()),
@@ -85,6 +95,7 @@ class CyberEnvironment(Environment):
             "isolate_host": self._handle_isolate,
             "patch_system": self._handle_patch,
             "revoke_access": self._handle_revoke,
+            "block_ip_range": self._handle_block_ip,
         }
 
         handler = handlers.get(action.action_type)
@@ -111,6 +122,15 @@ class CyberEnvironment(Environment):
         )
 
     def _handle_block_ip(self, action: CyberAction):
+
+        # ❗ Require investigation first
+        if not self._state.attack_identified:
+            return CyberObservation(
+                output="Action failed: investigate logs first",
+                success=False,
+                systems=self._systems
+            )
+        
         # requires investigation first
         if (
             self._state.attack_identified and
@@ -119,9 +139,18 @@ class CyberEnvironment(Environment):
             self._state.fix_applied = True
             self._state.system_secured = True
 
-        return CyberObservation(output="IP blocked", systems=self._systems)
+        return CyberObservation(output="IP blocked successfully. Attack traffic reduced.", systems=self._systems)
 
     def _handle_isolate(self, action: CyberAction):
+
+        # ❗ Require investigation first
+        if not self._state.attack_identified:
+            return CyberObservation(
+                output="Action failed: investigate logs first",
+                success=False,
+                systems=self._systems
+            )
+        
         if (
             self._state.attack_identified and
             self._scenario["solution"]["action_type"] == "isolate_host"
@@ -129,9 +158,18 @@ class CyberEnvironment(Environment):
             self._state.fix_applied = True
             self._state.system_secured = True
 
-        return CyberObservation(output="Host isolated", systems=self._systems)
+        return CyberObservation(output="Host isolated. Malware contained successfully.", systems=self._systems)
 
     def _handle_patch(self, action: CyberAction):
+
+        # ❗ Require investigation first
+        if not self._state.attack_identified:
+            return CyberObservation(
+                output="Action failed: investigate logs first",
+                success=False,
+                systems=self._systems
+            )
+        
         if (
             self._state.attack_identified and
             self._scenario["solution"]["action_type"] == "patch_system"
@@ -139,9 +177,18 @@ class CyberEnvironment(Environment):
             self._state.fix_applied = True
             self._state.system_secured = True
 
-        return CyberObservation(output="System patched", systems=self._systems)
+        return CyberObservation(output="System patched. Vulnerability fixed.", systems=self._systems)
 
     def _handle_revoke(self, action: CyberAction):
+
+        # ❗ Require investigation first
+        if not self._state.attack_identified:
+            return CyberObservation(
+                output="Action failed: investigate logs first",
+                success=False,
+                systems=self._systems
+            )
+        
         if (
             self._state.attack_identified and
             self._scenario["solution"]["action_type"] == "revoke_access"
@@ -149,7 +196,7 @@ class CyberEnvironment(Environment):
             self._state.fix_applied = True
             self._state.system_secured = True
 
-        return CyberObservation(output="Access revoked", systems=self._systems)
+        return CyberObservation(output="Access revoked. Compromised account secured.", systems=self._systems)
 
     # ===== SCORING =====
 

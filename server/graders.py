@@ -8,6 +8,13 @@ from models import CyberState
 def _has_action(actions, action_type):
     return any(a.get("action_type") == action_type for a in actions)
 
+def _correct_target(actions, expected_target):
+    return any(a.get("target") == expected_target for a in actions)
+
+def _correct_sequence(actions, expected_sequence):
+    seq = [a.get("action_type") for a in actions]
+    return seq[:len(expected_sequence)] == expected_sequence
+
 
 # =========================
 # TASK 1 — EASY
@@ -18,11 +25,19 @@ def grade_task1(state: CyberState) -> float:
     if _has_action(state.actions_taken, "scan_logs"):
         score += 0.3
 
-    if _has_action(state.actions_taken, "block_ip"):
+    if _correct_target(state.actions_taken, "192.168.1.10"):
         score += 0.3
+
+    if _correct_sequence(state.actions_taken, ["scan_logs", "block_ip"]):
+        score += 0.2
 
     if state.system_secured:
         score += 0.4
+
+    actions = state.actions_taken
+    # ❗ Penalize repeated / random actions
+    if len(set(a["action_type"] for a in actions)) != len(actions):
+        score -= 0.1
 
     return min(score, 1.0)
 
@@ -50,6 +65,11 @@ def grade_task2(state: CyberState) -> float:
     if len(state.actions_taken) >= 3:
         score += 0.1
 
+    actions = state.actions_taken
+    # ❗ Penalize repeated / random actions
+    if len(set(a["action_type"] for a in actions)) != len(actions):
+        score -= 0.1
+
     return max(0.0, min(score, 1.0))
 
 
@@ -67,6 +87,11 @@ def grade_task3(state: CyberState) -> float:
 
     if state.system_secured:
         score += 0.4
+
+    actions = state.actions_taken
+    # ❗ Penalize repeated / random actions
+    if len(set(a["action_type"] for a in actions)) != len(actions):
+        score -= 0.1
 
     return min(score, 1.0)
 
@@ -93,6 +118,11 @@ def grade_task4(state: CyberState) -> float:
     if _has_action(state.actions_taken, "patch_system"):
         score -= 0.2
 
+    actions = state.actions_taken
+    # ❗ Penalize repeated / random actions
+    if len(set(a["action_type"] for a in actions)) != len(actions):
+        score -= 0.1
+
     return max(0.0, min(score, 1.0))
 
 
@@ -113,6 +143,11 @@ def grade_task5(state: CyberState) -> float:
 
     if state.system_secured:
         score += 0.3
+
+    actions = state.actions_taken
+    # ❗ Penalize repeated / random actions
+    if len(set(a["action_type"] for a in actions)) != len(actions):
+        score -= 0.1
 
     return min(score, 1.0)
 
@@ -140,7 +175,7 @@ def grade(state: CyberState) -> float:
 
     # penalty for too fast solving
     if len(state.actions_taken) <= 2:
-        score -= 0.1
+        raw -= 0.1
 
     # clamp (IMPORTANT for hackathon)
     return max(0.01, min(raw, 0.99))
