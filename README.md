@@ -173,7 +173,7 @@ The baseline agent:
 # 🧪 Example Usage
 
 ```bash
-BASE="your-space-url"
+BASE="https://huggingface.co/spaces/iam-pradeepkumar/cybershield-env"
 
 curl -X POST "$BASE/reset" \
   -H "Content-Type: application/json" \

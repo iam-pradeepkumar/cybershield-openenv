@@ -1,17 +1,17 @@
 [project]
 name = "cybershield-env"
 version = "0.1.0"
-description = "CyberShield RL Environment"
+description = "CyberShield RL Environment — AI Cybersecurity Defense"
 requires-python = ">=3.10"
 
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.24.0",
     "pydantic>=2.0.0",
-    "openenv-core[core]>=0.2.1"
+    "openenv-core[core]>=0.2.1",
+    "openai>=1.0.0",
 ]
 
-# 🔥 IMPORTANT (fixes script error)
 [project.scripts]
 server = "server.app:main"
 

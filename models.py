@@ -3,14 +3,14 @@ from openenv.core.env_server import Action, Observation, State
 from pydantic import Field
 
 
-# 🔥 ACTIONS (what agent can do)
+# ACTIONS (what the agent can do)
 class CyberAction(Action):
     action_type: str = ""
     target: str = ""
     parameters: Dict[str, Any] = Field(default_factory=dict)
 
 
-# 👁️ OBSERVATION (what agent sees)
+# OBSERVATION (what the agent sees after each step)
 class CyberObservation(Observation):
     output: str = ""
     systems: Dict[str, Any] = Field(default_factory=dict)
@@ -23,7 +23,7 @@ class CyberObservation(Observation):
     partial_score: float = 0.0
 
 
-# 🧠 STATE (internal tracking for grading)
+# STATE (internal tracking used by graders)
 class CyberState(State):
     task_id: str = ""
 
