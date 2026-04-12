@@ -6,7 +6,7 @@ from typing import Any
 
 from openenv.core.env_server import Environment
 from models import CyberAction, CyberObservation, CyberState
-from scenarios import TASK_MAP
+from server.scenarios import TASK_MAP
 
 
 class CyberEnvironment(Environment):
@@ -29,16 +29,15 @@ class CyberEnvironment(Environment):
         self._scenario = scenario
         self._systems = copy.deepcopy(scenario["systems"])
         self._logs = copy.deepcopy(scenario["logs"])
-
-        # Add noise logs for realism
+        # 🔥 Add noise logs (real-world confusion)
         for system in self._logs:
             if random.random() < 0.3:
                 self._logs[system].append("DEBUG: routine system check completed")
 
-        # Slight randomness in system metrics
+        # 🔥 Slight randomness in system metrics
         for sys in self._systems.values():
-            sys["cpu"] = max(0, min(100, sys["cpu"] + random.randint(-5, 5)))
-            sys["memory"] = max(0, min(100, sys["memory"] + random.randint(-5, 5)))
+            sys["cpu"] += random.randint(-5, 5)
+            sys["memory"] += random.randint(-5, 5)
 
         self._state = CyberState(
             episode_id=str(uuid.uuid4()),
@@ -52,7 +51,7 @@ class CyberEnvironment(Environment):
         )
 
         return CyberObservation(
-            output=f"ALERT: {scenario['description']}",
+            output=f"🚨 {scenario['description']}",
             systems=self._systems,
             done=False,
             success=True,
@@ -71,13 +70,13 @@ class CyberEnvironment(Environment):
 
         obs = self._dispatch(action)
 
-        # Done logic
+        # done logic
         if self._state.system_secured:
             obs.done = True
-            obs.output += "\n[OK] System secured successfully."
+            obs.output += "\n✅ System secured!"
         elif self._state.step_count >= max_steps:
             obs.done = True
-            obs.output += "\n[FAIL] Max steps reached. Episode ended."
+            obs.output += "\n❌ Max steps reached"
 
         prev_score = self._state.current_score
         self._state.current_score = self._calculate_score()
@@ -91,19 +90,19 @@ class CyberEnvironment(Environment):
 
     def _dispatch(self, action: CyberAction) -> CyberObservation:
         handlers = {
-            "scan_logs":     self._handle_scan_logs,
-            "block_ip":      self._handle_block_ip,
-            "block_ip_range": self._handle_block_ip,   # alias → same handler
-            "isolate_host":  self._handle_isolate,
-            "patch_system":  self._handle_patch,
+            "scan_logs": self._handle_scan_logs,
+            "block_ip": self._handle_block_ip,
+            "isolate_host": self._handle_isolate,
+            "patch_system": self._handle_patch,
             "revoke_access": self._handle_revoke,
+            "block_ip_range": self._handle_block_ip,
         }
 
         handler = handlers.get(action.action_type)
 
         if not handler:
             return CyberObservation(
-                output=f"Unknown action: {action.action_type}. Valid actions: scan_logs, block_ip, isolate_host, patch_system, revoke_access.",
+                output="Invalid action",
                 systems=self._systems,
                 success=False,
                 error="Unknown action"
@@ -111,88 +110,97 @@ class CyberEnvironment(Environment):
 
         return handler(action)
 
-    # ===== ACTION HANDLERS =====
+    # ===== ACTIONS =====
 
-    def _handle_scan_logs(self, action: CyberAction) -> CyberObservation:
+    def _handle_scan_logs(self, action: CyberAction):
         self._state.attack_identified = True
-        logs = self._logs.get(action.target, [f"No logs found for target: {action.target}"])
+        logs = self._logs.get(action.target, [])
+
         return CyberObservation(
             output="\n".join(logs),
             systems=self._systems
         )
 
-    def _handle_block_ip(self, action: CyberAction) -> CyberObservation:
+    def _handle_block_ip(self, action: CyberAction):
+
+        # ❗ Require investigation first
         if not self._state.attack_identified:
             return CyberObservation(
-                output="Action failed: run scan_logs to investigate before taking action.",
+                output="Action failed: investigate logs first",
                 success=False,
                 systems=self._systems
             )
-
-        solution_type = self._scenario["solution"]["action_type"]
-        if solution_type in ("block_ip", "block_ip_range"):
+        
+        # requires investigation first
+        if (
+            self._state.attack_identified and
+            self._scenario["solution"]["action_type"] == "block_ip"
+        ):
             self._state.fix_applied = True
             self._state.system_secured = True
 
-        return CyberObservation(
-            output="IP blocked successfully. Attack traffic reduced.",
-            systems=self._systems
-        )
+        return CyberObservation(output="IP blocked successfully. Attack traffic reduced.", systems=self._systems)
 
-    def _handle_isolate(self, action: CyberAction) -> CyberObservation:
+    def _handle_isolate(self, action: CyberAction):
+
+        # ❗ Require investigation first
         if not self._state.attack_identified:
             return CyberObservation(
-                output="Action failed: run scan_logs to investigate before taking action.",
+                output="Action failed: investigate logs first",
                 success=False,
                 systems=self._systems
             )
-
-        if self._scenario["solution"]["action_type"] == "isolate_host":
+        
+        if (
+            self._state.attack_identified and
+            self._scenario["solution"]["action_type"] == "isolate_host"
+        ):
             self._state.fix_applied = True
             self._state.system_secured = True
 
-        return CyberObservation(
-            output="Host isolated. Malware contained successfully.",
-            systems=self._systems
-        )
+        return CyberObservation(output="Host isolated. Malware contained successfully.", systems=self._systems)
 
-    def _handle_patch(self, action: CyberAction) -> CyberObservation:
+    def _handle_patch(self, action: CyberAction):
+
+        # ❗ Require investigation first
         if not self._state.attack_identified:
             return CyberObservation(
-                output="Action failed: run scan_logs to investigate before taking action.",
+                output="Action failed: investigate logs first",
                 success=False,
                 systems=self._systems
             )
-
-        if self._scenario["solution"]["action_type"] == "patch_system":
+        
+        if (
+            self._state.attack_identified and
+            self._scenario["solution"]["action_type"] == "patch_system"
+        ):
             self._state.fix_applied = True
             self._state.system_secured = True
 
-        return CyberObservation(
-            output="System patched. Vulnerability fixed.",
-            systems=self._systems
-        )
+        return CyberObservation(output="System patched. Vulnerability fixed.", systems=self._systems)
 
-    def _handle_revoke(self, action: CyberAction) -> CyberObservation:
+    def _handle_revoke(self, action: CyberAction):
+
+        # ❗ Require investigation first
         if not self._state.attack_identified:
             return CyberObservation(
-                output="Action failed: run scan_logs to investigate before taking action.",
+                output="Action failed: investigate logs first",
                 success=False,
                 systems=self._systems
             )
-
-        if self._scenario["solution"]["action_type"] == "revoke_access":
+        
+        if (
+            self._state.attack_identified and
+            self._scenario["solution"]["action_type"] == "revoke_access"
+        ):
             self._state.fix_applied = True
             self._state.system_secured = True
 
-        return CyberObservation(
-            output="Access revoked. Compromised account secured.",
-            systems=self._systems
-        )
+        return CyberObservation(output="Access revoked. Compromised account secured.", systems=self._systems)
 
     # ===== SCORING =====
 
-    def _calculate_score(self) -> float:
+    def _calculate_score(self):
         score = 0.0
 
         if self._state.attack_identified:
@@ -204,12 +212,12 @@ class CyberEnvironment(Environment):
         if self._state.system_secured:
             score += 0.4
 
-        # Penalty for rushing (< 3 steps)
+        # penalty for rushing
         if self._state.step_count <= 2:
             score -= 0.1
 
         return max(0.0, min(score, 1.0))
 
     @property
-    def state(self) -> CyberState:
+    def state(self):
         return self._state
