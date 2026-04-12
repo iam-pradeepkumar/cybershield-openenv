@@ -6,13 +6,13 @@ from typing import Any
 
 BASE_SYSTEM = {
     "auth-server": {"status": "healthy", "cpu": 10, "memory": 30, "alerts": 0},
-    "db-server": {"status": "healthy", "cpu": 20, "memory": 40, "alerts": 0},
-    "web-server": {"status": "healthy", "cpu": 15, "memory": 35, "alerts": 0},
-    "firewall": {"status": "healthy", "cpu": 5, "memory": 20, "alerts": 0},
+    "db-server":   {"status": "healthy", "cpu": 20, "memory": 40, "alerts": 0},
+    "web-server":  {"status": "healthy", "cpu": 15, "memory": 35, "alerts": 0},
+    "firewall":    {"status": "healthy", "cpu": 5,  "memory": 20, "alerts": 0},
 }
 
 # =============================
-# 🟢 TASK 1 — BRUTE FORCE (EASY)
+# TASK 1 — BRUTE FORCE (EASY)
 # =============================
 
 TASK1 = {
@@ -42,7 +42,7 @@ TASK1 = {
 }
 
 # =============================
-# 🟡 TASK 2 — MALWARE (MEDIUM)
+# TASK 2 — MALWARE (MEDIUM)
 # =============================
 
 TASK2 = {
@@ -60,7 +60,7 @@ TASK2 = {
         "web-server": [
             "Unknown process running: crypto_miner.exe",
             "CPU usage spike detected",
-            "Suspicious outbound traffic",
+            "Suspicious outbound traffic to 45.33.32.156",
         ],
         "db-server": [
             "Normal database activity"
@@ -74,7 +74,7 @@ TASK2 = {
 }
 
 # =============================
-# 🟡 TASK 3 — PHISHING (MEDIUM)
+# TASK 3 — PHISHING (MEDIUM)
 # =============================
 
 TASK3 = {
@@ -103,13 +103,14 @@ TASK3 = {
 }
 
 # =============================
-# 🔴 TASK 4 — DDOS (HARD)
+# TASK 4 — DDOS (HARD)
+# Fixed: solution now uses block_ip to match the grader check
 # =============================
 
 TASK4 = {
     "task_id": "task_4_ddos",
     "difficulty": "hard",
-    "description": "Massive traffic spike detected. Identify if it's a DDoS attack.",
+    "description": "Massive traffic spike detected. Identify and mitigate the DDoS attack.",
     "max_steps": 15,
 
     "systems": {
@@ -119,28 +120,28 @@ TASK4 = {
 
     "logs": {
         "web-server": [
-            "Traffic spike: 10000 requests/sec",
-            "Multiple IPs accessing /api endpoint",
-            "Possible DDoS attack",
-            # 🔥 Red herring
+            "Traffic spike: 10000 requests/sec from multiple IPs",
+            "Multiple IPs flooding /api endpoint",
+            "Possible DDoS attack from IP range 198.51.100.0/24",
+            # Red herring
             "Disk space warning from last week",
         ]
     },
 
     "solution": {
-        "action_type": "block_ip_range",
+        "action_type": "block_ip",
         "target": "multiple"
     }
 }
 
 # =============================
-# 🔴 TASK 5 — ZERO DAY (HARD)
+# TASK 5 — ZERO DAY (HARD)
 # =============================
 
 TASK5 = {
     "task_id": "task_5_zero_day",
     "difficulty": "hard",
-    "description": "Subtle system anomaly detected. No obvious errors.",
+    "description": "Subtle system anomaly detected. No obvious errors. Investigate carefully.",
     "max_steps": 15,
 
     "systems": {
@@ -152,7 +153,6 @@ TASK5 = {
         "db-server": [
             "Unusual query execution pattern",
             "Hidden privilege escalation detected",
-            # 🔥 subtle clue
             "Unknown root access granted silently",
         ]
     },
@@ -169,10 +169,10 @@ TASK5 = {
 
 TASK_MAP = {
     "task_1_bruteforce": TASK1,
-    "task_2_malware": TASK2,
-    "task_3_phishing": TASK3,
-    "task_4_ddos": TASK4,
-    "task_5_zero_day": TASK5,
+    "task_2_malware":    TASK2,
+    "task_3_phishing":   TASK3,
+    "task_4_ddos":       TASK4,
+    "task_5_zero_day":   TASK5,
 }
 
 ALL_TASKS = list(TASK_MAP.values())
